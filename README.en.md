@@ -5,16 +5,11 @@
 
 [DE](README.md) · EN
 
-TeOS is a **custom Linux** (Alpine userspace so `apk add` / normal Linux apps work) plus our own **UEFI splash** (not a from-scratch kernel anymore — Linux apps need a Linux kernel). Target later: **MacBook Pro 2018 15"** (`MacBookPro15,1`). Dual-boot is **not** implemented. USB only.
+TeOS is Linux (so apps can install) plus a **picture settings screen** at boot. You do **not** edit config files.
 
-## Customize
+Top is a live preview. Then boxes: **Circles / Grow / Rain / Bounce**, colors, **Short / Medium / Long**, **Save**. Click, or arrows then Enter.
 
-Edit text files, rebuild/copy, reboot. See [config/README.md](config/README.md).
-
-- `config/splash.cfg` — boot animation (`orbit` / `pulse` / `rain` / `bounce` / `none`), colors, duration
-- `config/linux.cfg` — hostname, extra packages, motd
-
-## Run (this Mac, QEMU)
+Linux apps in QEMU still use a login for now (`root`, empty password). Same-style settings there is next.
 
 ```bash
 ./scripts/build.sh
