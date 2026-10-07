@@ -20,6 +20,12 @@ mkdir linux-root
 tar -C linux-root -xzf "$ROOTFS"
 mkdir -p linux-root/usr/local/bin
 cp linux/teos-ui.sh linux-root/usr/local/bin/teos-ui
+if command -v zig >/dev/null 2>&1; then
+  zig cc -target x86_64-linux-musl -static -O2 -s -o linux-root/usr/local/bin/teos-gui linux/teos-gui.c
+elif [ -x linux/teos-gui ]; then
+  cp linux/teos-gui linux-root/usr/local/bin/teos-gui
+fi
+chmod 755 linux-root/usr/local/bin/teos-ui linux-root/usr/local/bin/teos-gui 2>/dev/null || true
 cp linux/init linux-root/init
 chmod 755 linux-root/init linux-root/usr/local/bin/teos-ui
 printf 'teos\n' > linux-root/etc/hostname
@@ -57,6 +63,28 @@ unsquashfs -f -d build/mods build/modloop-virt \
     modules/$KVER/kernel/fs/mbcache.ko \
     modules/$KVER/kernel/fs/jbd2/jbd2.ko \
     modules/$KVER/kernel/fs/ext4/ext4.ko \
+    modules/$KVER/kernel/drivers/i2c/i2c-core.ko \
+    modules/$KVER/kernel/drivers/video/fbdev/core/fb.ko \
+    modules/$KVER/kernel/drivers/video/fbdev/core/fb_sys_fops.ko \
+    modules/$KVER/kernel/drivers/video/fbdev/core/syscopyarea.ko \
+    modules/$KVER/kernel/drivers/video/fbdev/core/sysfillrect.ko \
+    modules/$KVER/kernel/drivers/video/fbdev/core/sysimgblt.ko \
+    modules/$KVER/kernel/drivers/gpu/drm/drm_panel_orientation_quirks.ko \
+    modules/$KVER/kernel/drivers/gpu/drm/drm.ko \
+    modules/$KVER/kernel/drivers/gpu/drm/drm_kms_helper.ko \
+    modules/$KVER/kernel/drivers/gpu/drm/clients/drm_client_lib.ko \
+    modules/$KVER/kernel/drivers/gpu/drm/drm_shmem_helper.ko \
+    modules/$KVER/kernel/drivers/gpu/drm/sysfb/drm_sysfb_helper.ko \
+    modules/$KVER/kernel/drivers/gpu/drm/sysfb/simpledrm.ko \
+    modules/$KVER/kernel/drivers/gpu/drm/ttm/ttm.ko \
+    modules/$KVER/kernel/drivers/gpu/drm/drm_ttm_helper.ko \
+    modules/$KVER/kernel/drivers/gpu/drm/drm_vram_helper.ko \
+    modules/$KVER/kernel/drivers/gpu/drm/tiny/bochs.ko \
+    modules/$KVER/kernel/drivers/hid/hid.ko \
+    modules/$KVER/kernel/drivers/hid/hid-generic.ko \
+    modules/$KVER/kernel/drivers/hid/usbhid/usbhid.ko \
+    modules/$KVER/kernel/drivers/input/evdev.ko \
+    modules/$KVER/kernel/drivers/input/mousedev.ko \
     >/dev/null
 if [ -d build/mods/modules/$KVER ]; then
   mkdir -p linux-root/lib/modules/$KVER

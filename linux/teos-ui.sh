@@ -160,23 +160,27 @@ stop_os() {
 }
 
 while true; do
-  banner
-  hn=$(cat /etc/hostname 2>/dev/null || echo teos)
-  say "  Hello. This computer is: $hn"
-  say "  USB only. Not macOS."
-  say ""
-  say "  1) Change the name"
-  say "  2) Get apps"
-  say "  3) Write a note"
-  say "  4) Files on the stick"
-  say "  5) Web"
-  say "  6) Status"
-  say "  7) Terminal"
-  say "  8) Calculator"
-  say "  9) Reboot"
-  say "  0) Shut down"
-  printf '\n  Type a number, then Enter: '
-  read -r c || c=7
+  if [ -x /usr/local/bin/teos-gui ] && [ -e /dev/fb0 ]; then
+    c=$(/usr/local/bin/teos-gui)
+  else
+    banner
+    hn=$(cat /etc/hostname 2>/dev/null || echo teos)
+    say "  Hello. This computer is: $hn"
+    say "  USB only. Not macOS."
+    say ""
+    say "  1) Change the name"
+    say "  2) Get apps"
+    say "  3) Write a note"
+    say "  4) Files on the stick"
+    say "  5) Web"
+    say "  6) Status"
+    say "  7) Terminal"
+    say "  8) Calculator"
+    say "  9) Reboot"
+    say "  0) Shut down"
+    printf '\n  Type a number, then Enter: '
+    read -r c || c=7
+  fi
   case "$c" in
     1) set_name ;;
     2) get_apps ;;

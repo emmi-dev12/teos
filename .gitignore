@@ -4,6 +4,8 @@
 /esp
 /build
 /linux-root
+/linux/teos-gui
+*.img
 *.img
 *.fd
 OVMF_VARS.fd

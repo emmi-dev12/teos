@@ -44,9 +44,11 @@ fi
 
 exec qemu-system-x86_64 \
   -machine q35 \
-  -m 256 \
+  -m 384 \
   -drive if=pflash,format=raw,readonly=on,file="$CODE" \
   $FLASH_VARS \
+  -device qemu-xhci,id=xhci \
+  -device usb-tablet,bus=xhci.0 \
   -drive format=raw,file=fat:rw:esp \
   -drive file=build/stick.img,format=raw,if=virtio \
   -nic user,model=virtio \
