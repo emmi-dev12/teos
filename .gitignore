@@ -1,0 +1,9 @@
+/target
+/boot/target
+/kernel/target
+/esp
+/build
+*.img
+*.fd
+OVMF_VARS.fd
+.DS_Store

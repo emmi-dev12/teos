@@ -1,0 +1,12 @@
+[package]
+name = "teos-boot"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "teos-boot"
+path = "src/main.rs"
+
+[dependencies]
+uefi = { version = "0.33", features = ["panic_handler"] }

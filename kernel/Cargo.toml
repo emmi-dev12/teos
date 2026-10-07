@@ -1,0 +1,9 @@
+[package]
+name = "teos-kernel"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "teos_kernel"
+path = "src/lib.rs"
