@@ -11,7 +11,7 @@ Top is a live preview. Then boxes: **Circles / Grow / Rain / Bounce / My clip**,
 
 Your own video: tap **Upload** on the boot screen, or on this Mac run `./scripts/upload-gui.py` (a real file picker). Firmware cannot open Photos.
 
-Linux: `./scripts/run-qemu.sh` then **Start** (or space). Menu 1–4, no login. Or `./scripts/run-linux.sh` skips the splash.
+Linux: `./scripts/run-qemu.sh` then **Start** (or space). Home screen 1–8 (name, apps, notes, files, web, status, terminal, shut down). Or `./scripts/run-linux.sh`.
 
 ```bash
 ./scripts/build.sh
