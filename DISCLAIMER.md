@@ -1,6 +1,6 @@
 # STOP. READ THIS BEFORE YOU TOUCH A USB STICK OR A MAC.
 
-**TeOS is an unfinished hobby kernel. It is not an operating system you can live on. It is not macOS, not Linux, not Windows, not a recovery tool.**
+**TeOS is an unfinished hobby OS. It is not something you can live on. It is not macOS, not Windows, not a recovery tool. Userspace is Linux (Alpine) so packages can install; that does not make it safe or complete.**
 
 If you ignore this file you can **destroy data**, **brick firmware settings**, or **leave a Mac that will not boot** until you know how to use Apple Recovery. That is on you.
 

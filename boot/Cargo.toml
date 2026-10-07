@@ -9,4 +9,4 @@ name = "teos-boot"
 path = "src/main.rs"
 
 [dependencies]
-uefi = { version = "0.33", features = ["panic_handler"] }
+uefi = { version = "0.33", features = ["panic_handler", "alloc", "global_allocator"] }

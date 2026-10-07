@@ -1,27 +1,31 @@
 # TeOS
 
 > **[READ THE DISCLAIMER FIRST](DISCLAIMER.md)**  
-> Experimental hobby kernel. **USB only.** Not Linux. Not macOS. Can destroy data. No warranty. Not affiliated with Apple.
+> Experimental. **USB only.** Can destroy data. No warranty. Not affiliated with Apple.
 
 [DE](README.md) · EN
 
-TeOS is a **from-scratch** OS (not a Linux/Unix clone). Hardware target: **MacBook Pro 2018 15"** (`MacBookPro15,1`, T2 chip). Today we prove it in **QEMU**, then a USB stick. Dual-boot is **not** implemented.
+TeOS is a **custom Linux** (Alpine userspace so `apk add` / normal Linux apps work) plus our own **UEFI splash** (not a from-scratch kernel anymore — Linux apps need a Linux kernel). Target later: **MacBook Pro 2018 15"** (`MacBookPro15,1`). Dual-boot is **not** implemented. USB only.
 
-## Status
+## Customize
 
-v0.1: UEFI loader `BOOTX64.EFI` that paints `TeOS` on the GOP framebuffer.
+Edit text files, rebuild/copy, reboot. See [config/README.md](config/README.md).
 
-## Build
+- `config/splash.cfg` — boot animation (`orbit` / `pulse` / `rain` / `bounce` / `none`), colors, duration
+- `config/linux.cfg` — hostname, extra packages, motd
+
+## Run (this Mac, QEMU)
 
 ```bash
-rustup target add x86_64-unknown-uefi
 ./scripts/build.sh
-./scripts/run-qemu.sh
+./scripts/run-qemu.sh          # splash
+./scripts/fetch-alpine.sh
+./scripts/run-linux.sh         # Alpine: login root, empty password, then apk add nano
 ```
 
 ## USB
 
-Read **[DISCLAIMER.md](DISCLAIMER.md)** and **[docs/t2-boot.md](docs/t2-boot.md)**. Scripts refuse `disk0`.
+Read **DISCLAIMER.md** and **docs/t2-boot.md**. Scripts refuse `disk0`. Vanilla Alpine **will not** drive T2 Wi‑Fi / internal keyboard; that needs a t2linux kernel later.
 
 ## License
 
