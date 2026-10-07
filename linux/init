@@ -12,11 +12,7 @@ KVER=6.18.52-0-virt
 MOD=/lib/modules/$KVER/kernel
 ins() {
   if [ -f "$1" ]; then
-    if $BB insmod "$1" 2>/tmp/ins.err; then
-      log "mod ok $($BB basename "$1")"
-    else
-      log "mod fail $($BB basename "$1")"
-    fi
+    $BB insmod "$1" 2>/dev/null || log "mod fail $($BB basename "$1")"
   else
     log "mod missing $1"
   fi
@@ -80,12 +76,14 @@ elif [ -f /stick/hostname ]; then
 fi
 $BB hostname -F /etc/hostname 2>/dev/null || $BB hostname teos
 export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-for n in $($BB ls /sys/class/net 2>/dev/null); do
-  [ "$n" = "lo" ] && continue
-  log "dhcp $n"
-  $BB ip link set "$n" up 2>/dev/null || true
-  $BB udhcpc -i "$n" -n -q -t 8 >/dev/ttyS0 2>&1 || true
-done
+# Net in the background so the home screen is instant.
+(
+  for n in $($BB ls /sys/class/net 2>/dev/null); do
+    [ "$n" = "lo" ] && continue
+    $BB ip link set "$n" up 2>/dev/null || true
+    $BB udhcpc -i "$n" -n -q -t 2 -T 1 >/dev/null 2>&1 || true
+  done
+) &
 cd /root
 UI=/usr/local/bin/teos-ui
 if [ -c /dev/ttyS0 ]; then

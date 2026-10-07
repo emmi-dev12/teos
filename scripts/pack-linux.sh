@@ -63,11 +63,19 @@ if [ -d build/mods/modules/$KVER ]; then
   cp -R build/mods/modules/$KVER/kernel linux-root/lib/modules/$KVER/
 fi
 
-# newc cpio (macOS cpio supports -H newc)
+# Drop weight: docs, man, unused share. Keep apk + ssl.
+rm -rf linux-root/usr/share/man linux-root/usr/share/doc \
+  linux-root/usr/share/misc linux-root/usr/share/aclocal \
+  linux-root/media linux-root/mnt linux-root/opt linux-root/srv \
+  linux-root/home linux-root/usr/local/share 2>/dev/null || true
+find linux-root -name '*.a' -delete 2>/dev/null || true
+
+# zstd: smaller than gzip-1, much faster to unpack than gzip-9 on old CPUs.
+# Kernel sniffs magic; filename stays initrd.gz for the EFI stub.
 (
   cd linux-root
   find . | cpio -o -H newc 2>/dev/null
-) | gzip -9 > build/teos-initrd.gz
+) | zstd -1 -T0 -o build/teos-initrd.gz --force
 mkdir -p esp/EFI/TEOS
 cp -f build/vmlinuz-virt esp/EFI/TEOS/vmlinuz
 cp -f build/teos-initrd.gz esp/EFI/TEOS/initrd.gz

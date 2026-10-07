@@ -34,7 +34,7 @@ impl Default for Cfg {
         Self {
             animation: 2,
             color: 0,
-            length: 1,
+            length: 0,
         }
     }
 }
@@ -57,9 +57,9 @@ fn ink(c: &Cfg) -> BltPixel {
 
 fn duration_ms(c: &Cfg) -> u32 {
     match c.length {
-        0 => 1200,
-        2 => 5000,
-        _ => 2800,
+        0 => 700,
+        2 => 2800,
+        _ => 1400,
     }
 }
 
@@ -109,10 +109,10 @@ fn parse_cfg(text: &str) -> Cfg {
                     };
                 }
                 "duration_ms" => {
-                    let n: u32 = v.trim().parse().unwrap_or(2800);
-                    c.length = if n < 1800 {
+                    let n: u32 = v.trim().parse().unwrap_or(700);
+                    c.length = if n < 1100 {
                         0
-                    } else if n > 3600 {
+                    } else if n > 2000 {
                         2
                     } else {
                         1

@@ -44,7 +44,7 @@ fi
 
 exec qemu-system-x86_64 \
   -machine q35 \
-  -m 768 \
+  -m 256 \
   -drive if=pflash,format=raw,readonly=on,file="$CODE" \
   $FLASH_VARS \
   -drive format=raw,file=fat:rw:esp \

@@ -9,7 +9,7 @@ if [ "${TEOS_HEADLESS:-}" = 1 ]; then DISP="-display none"; fi
 echo "TeOS Linux — no login. Type a number."
 exec qemu-system-x86_64 \
   -machine q35 \
-  -m 512 \
+  -m 256 \
   -kernel build/vmlinuz-virt \
   -initrd build/teos-initrd.gz \
   -append "console=ttyS0 rdinit=/init quiet" \
