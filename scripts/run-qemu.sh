@@ -2,6 +2,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 ./scripts/build.sh
+./scripts/pack-linux.sh
 
 CODE=""
 VARS_SRC=""
@@ -42,10 +43,10 @@ fi
 
 exec qemu-system-x86_64 \
   -machine q35 \
-  -m 256 \
+  -m 768 \
   -drive if=pflash,format=raw,readonly=on,file="$CODE" \
   $FLASH_VARS \
   -drive format=raw,file=fat:rw:esp \
+  -nic user,model=virtio \
   -serial stdio \
-  -net none \
   $DISP

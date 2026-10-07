@@ -5,12 +5,14 @@ extern crate alloc;
 
 use alloc::format;
 use alloc::vec::Vec;
+use uefi::boot::LoadImageSource;
 use uefi::CString16;
 use uefi::fs::FileSystem;
 use uefi::prelude::*;
 use uefi::proto::console::gop::{BltOp, BltPixel, BltRegion, GraphicsOutput};
 use uefi::proto::console::pointer::Pointer;
 use uefi::proto::console::text::{Key, ScanCode};
+use uefi::proto::loaded_image::LoadedImage;
 
 #[no_mangle]
 pub unsafe extern "C" fn wcslen(s: *const u16) -> usize {
@@ -182,6 +184,40 @@ fn load_clip() -> Option<Clip> {
         pix.push(BltPixel::new(chunk[0], chunk[1], chunk[2]));
     }
     Some(Clip { w, h, n, pix })
+}
+
+fn start_linux() {
+    let Ok(proto) = boot::get_image_file_system(boot::image_handle()) else {
+        return;
+    };
+    let mut fs = FileSystem::new(proto);
+    let Ok(kpath) = CString16::try_from("EFI\\TEOS\\vmlinuz") else {
+        return;
+    };
+    let Ok(kbuf) = fs.read(&*kpath) else {
+        return;
+    };
+    let Ok(kh) = boot::load_image(
+        boot::image_handle(),
+        LoadImageSource::FromBuffer {
+            buffer: &kbuf,
+            file_path: None,
+        },
+    ) else {
+        return;
+    };
+    let opts = CString16::try_from("console=ttyS0 console=tty0 rdinit=/init initrd=\\EFI\\TEOS\\initrd.gz")
+        .ok();
+    if let Some(opts) = opts {
+        let leaked: &'static CString16 = alloc::boxed::Box::leak(alloc::boxed::Box::new(opts));
+        if let Ok(mut li) = boot::open_protocol_exclusive::<LoadedImage>(kh) {
+            let bytes = leaked.num_chars() * 2 + 2;
+            unsafe {
+                li.set_load_options(leaked.as_ptr().cast::<u8>(), bytes as u32);
+            }
+        }
+    }
+    let _ = boot::start_image(kh);
 }
 
 fn blit_clip(gop: &mut GraphicsOutput, clip: &Clip, ox: usize, oy: usize, pw: usize, ph: usize, t: u32) {
@@ -429,6 +465,7 @@ fn main() -> Status {
     let mut t = 0u32;
     let mut saved = false;
     let mut upload = false;
+    let mut go_linux = false;
     let looks = ["CIRCLES", "GROW", "RAIN", "BOUNCE", "MY CLIP"];
     let colors = ["BLUE", "GREEN", "ORANGE", "PINK"];
     let times = ["SHORT", "MEDIUM", "LONG"];
@@ -476,15 +513,23 @@ fn main() -> Status {
         hits.push(Hit {
             x: w / 2 - 200,
             y: row3 + th + gap,
-            w: 180,
+            w: 160,
             h: 52,
             kind: 4,
             id: 0,
         });
         hits.push(Hit {
-            x: w / 2 + 20,
+            x: w / 2 - 20,
             y: row3 + th + gap,
-            w: 200,
+            w: 160,
+            h: 52,
+            kind: 9,
+            id: 0,
+        });
+        hits.push(Hit {
+            x: w / 2 + 160,
+            y: row3 + th + gap,
+            w: 160,
             h: 52,
             kind: 6,
             id: 0,
@@ -563,7 +608,10 @@ fn main() -> Status {
             w,
             h,
         );
-        let up = &hits[13];
+        let stt = &hits[13];
+        fill(&mut gop, ink(&cfg), stt.x, stt.y, stt.w, stt.h);
+        text(&mut gop, stt.x + 28, stt.y + 16, "START", 3, BG, w, h);
+        let up = &hits[14];
         fill(&mut gop, WHITE, up.x, up.y, up.w, up.h);
         text(&mut gop, up.x + 24, up.y + 16, "UPLOAD", 3, BG, w, h);
         text(
@@ -586,6 +634,10 @@ fn main() -> Status {
                 if st.button[0] {
                     for hit in hits.iter() {
                         if in_hit(hit, mx, my) {
+                            if hit.kind == 9 {
+                                go_linux = true;
+                                continue;
+                            }
                             if hit.kind == 6 {
                                 upload = true;
                                 continue;
@@ -669,6 +721,9 @@ fn main() -> Status {
                     if c == '\r' {
                         saved = save_cfg(&cfg);
                     }
+                    if c == ' ' {
+                        go_linux = true;
+                    }
                 }
                 _ => {}
             }
@@ -676,5 +731,14 @@ fn main() -> Status {
 
         t = t.wrapping_add(1);
         boot::stall(16_000);
+        if go_linux {
+            break;
+        }
+    }
+    drop(ptr);
+    drop(gop);
+    start_linux();
+    loop {
+        boot::stall(1_000_000);
     }
 }

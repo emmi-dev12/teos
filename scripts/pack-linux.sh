@@ -30,4 +30,7 @@ printf 'teos\n' > linux-root/etc/motd
   cd linux-root
   find . | cpio -o -H newc 2>/dev/null
 ) | gzip -9 > build/teos-initrd.gz
+mkdir -p esp/EFI/TEOS
+cp -f build/vmlinuz-virt esp/EFI/TEOS/vmlinuz
+cp -f build/teos-initrd.gz esp/EFI/TEOS/initrd.gz
 echo "packed build/teos-initrd.gz ($(wc -c < build/teos-initrd.gz) bytes)"
