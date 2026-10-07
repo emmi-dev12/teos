@@ -31,11 +31,15 @@ if [ ! -e "$DEV" ]; then
 fi
 
 ./scripts/build.sh
+./scripts/pack-linux.sh
 echo "About to erase $DEV as FAT32 TEOS. Ctrl-C if wrong."
 sleep 5
 diskutil eraseDisk FAT32 TEOS MBR "$DEV"
-mkdir -p /Volumes/TEOS/EFI/BOOT
+mkdir -p /Volumes/TEOS/EFI/BOOT /Volumes/TEOS/EFI/TEOS
 cp esp/EFI/BOOT/BOOTX64.EFI /Volumes/TEOS/EFI/BOOT/BOOTX64.EFI
+cp -R esp/EFI/TEOS/. /Volumes/TEOS/EFI/TEOS/
+cp -f esp/splash.cfg /Volumes/TEOS/splash.cfg 2>/dev/null || true
+cp -f esp/CLIP.VID /Volumes/TEOS/CLIP.VID 2>/dev/null || true
 cp DISCLAIMER.md /Volumes/TEOS/DISCLAIMER.md
 diskutil eject "$DEV" || true
-echo "Stick ready. Hold Option on the T2 Mac, pick EFI Boot."
+echo "Stick ready. Hold Option on the T2 Mac, pick EFI Boot, then Start."

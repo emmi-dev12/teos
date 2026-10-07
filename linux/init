@@ -1,17 +1,48 @@
 #!/bin/sh
 # PID 1 inside the TeOS Linux initrd.
-/bin/busybox mkdir -p /proc /sys /dev /tmp /run
-/bin/busybox mount -t proc proc /proc
-/bin/busybox mount -t sysfs sys /sys
-/bin/busybox mount -t devtmpfs dev /dev 2>/dev/null || true
-/bin/busybox hostname -F /etc/hostname 2>/dev/null || /bin/busybox hostname teos
+BB=/bin/busybox
+$BB mkdir -p /proc /sys /dev /tmp /run /stick /lib/modules
+$BB mount -t proc proc /proc
+$BB mount -t sysfs sys /sys
+$BB mount -t devtmpfs dev /dev 2>/dev/null || true
 export HOME=/root
 export PATH=/sbin:/usr/sbin:/bin:/usr/bin
+KVER=6.18.52-0-virt
+MOD=/lib/modules/$KVER/kernel
+ins() { [ -f "$1" ] && $BB insmod "$1" 2>/dev/null || true; }
+ins "$MOD/drivers/scsi/sd_mod.ko"
+ins "$MOD/fs/nls/nls_cp437.ko"
+ins "$MOD/fs/nls/nls_iso8859-1.ko"
+ins "$MOD/fs/fat/fat.ko"
+ins "$MOD/fs/fat/vfat.ko"
+ins "$MOD/net/core/failover.ko"
+ins "$MOD/drivers/net/net_failover.ko"
+ins "$MOD/drivers/net/virtio_net.ko"
+ins "$MOD/drivers/net/ethernet/intel/e1000/e1000.ko"
+$BB mdev -s 2>/dev/null || true
+for d in /dev/sda1 /dev/sda /dev/vda1 /dev/vda /dev/sdb1 /dev/sdb; do
+  if [ -b "$d" ] && $BB mount -t vfat "$d" /stick 2>/dev/null; then
+    break
+  fi
+done
+if [ -f /stick/hostname ]; then
+  $BB cp /stick/hostname /etc/hostname
+fi
+$BB hostname -F /etc/hostname 2>/dev/null || $BB hostname teos
+# network (best effort)
+for n in eth0 ens3 ens4 enp0s3; do
+  if [ -d /sys/class/net/"$n" ]; then
+    $BB ip link set "$n" up 2>/dev/null || true
+    $BB udhcpc -i "$n" -n -q -t 5 2>/dev/null || true
+    break
+  fi
+done
 cd /root
+UI=/usr/local/bin/teos-ui
 if [ -c /dev/ttyS0 ]; then
-  exec /usr/local/bin/teos-ui <>/dev/ttyS0 >&0 2>&1
+  exec $UI <>/dev/ttyS0 >&0 2>&1
 fi
 if [ -c /dev/console ]; then
-  exec /usr/local/bin/teos-ui <>/dev/console >&0 2>&1
+  exec $UI <>/dev/console >&0 2>&1
 fi
-exec /usr/local/bin/teos-ui
+exec $UI

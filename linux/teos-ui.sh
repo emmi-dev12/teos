@@ -27,6 +27,7 @@ set_name() {
   [ -z "$n" ] && return
   printf '%s\n' "$n" >/etc/hostname
   hostname "$n" 2>/dev/null || true
+  printf '%s\n' "$n" >/stick/hostname 2>/dev/null || true
   say ""
   say "  OK. It is called $n"
   wait_key

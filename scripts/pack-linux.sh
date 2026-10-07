@@ -25,6 +25,29 @@ chmod 755 linux-root/init linux-root/usr/local/bin/teos-ui
 printf 'teos\n' > linux-root/etc/hostname
 printf 'teos\n' > linux-root/etc/motd
 
+if [ ! -f build/modloop-virt ]; then
+  7z e -y -obuild "$ISO" boot/modloop-virt >/dev/null
+fi
+KVER=6.18.52-0-virt
+if [ ! -f build/mods/modules/$KVER/kernel/drivers/net/virtio_net.ko ]; then
+  mkdir -p build/mods
+  unsquashfs -f -d build/mods build/modloop-virt \
+    modules/$KVER/kernel/drivers/scsi/sd_mod.ko \
+    modules/$KVER/kernel/fs/nls/nls_cp437.ko \
+    modules/$KVER/kernel/fs/nls/nls_iso8859-1.ko \
+    modules/$KVER/kernel/fs/fat/fat.ko \
+    modules/$KVER/kernel/fs/fat/vfat.ko \
+    modules/$KVER/kernel/net/core/failover.ko \
+    modules/$KVER/kernel/drivers/net/net_failover.ko \
+    modules/$KVER/kernel/drivers/net/virtio_net.ko \
+    modules/$KVER/kernel/drivers/net/ethernet/intel/e1000/e1000.ko \
+    >/dev/null
+fi
+if [ -d build/mods/modules/$KVER ]; then
+  mkdir -p linux-root/lib/modules/$KVER
+  cp -R build/mods/modules/$KVER/kernel linux-root/lib/modules/$KVER/
+fi
+
 # newc cpio (macOS cpio supports -H newc)
 (
   cd linux-root
