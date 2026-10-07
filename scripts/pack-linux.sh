@@ -52,6 +52,11 @@ unsquashfs -f -d build/mods build/modloop-virt \
     modules/$KVER/kernel/drivers/usb/host/xhci-pci.ko \
     modules/$KVER/kernel/drivers/usb/storage/usb-storage.ko \
     modules/$KVER/kernel/drivers/usb/storage/uas.ko \
+    modules/$KVER/kernel/drivers/block/loop.ko \
+    modules/$KVER/kernel/lib/crc/crc16.ko \
+    modules/$KVER/kernel/fs/mbcache.ko \
+    modules/$KVER/kernel/fs/jbd2/jbd2.ko \
+    modules/$KVER/kernel/fs/ext4/ext4.ko \
     >/dev/null
 if [ -d build/mods/modules/$KVER ]; then
   mkdir -p linux-root/lib/modules/$KVER

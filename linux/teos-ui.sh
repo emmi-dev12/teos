@@ -1,7 +1,8 @@
 #!/bin/sh
 # TeOS home screen. Numbers, not config files.
 . /etc/profile 2>/dev/null || true
-export PATH="/sbin:/usr/sbin:/bin:/usr/bin"
+export PATH="/apps/usr/bin:/apps/bin:/sbin:/usr/sbin:/bin:/usr/bin"
+export LD_LIBRARY_PATH="/apps/usr/lib:/apps/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 say() { printf '%s\n' "$*"; }
 
@@ -19,7 +20,7 @@ wait_key() {
 
 note_path() {
   if [ -d /stick ] && [ -w /stick ]; then
-    printf '%s' /stick/notes.txt
+    printf '%s' /stick/NOTES.TXT
   else
     printf '%s' /root/notes.txt
   fi
@@ -59,8 +60,22 @@ get_apps() {
   esac
   say ""
   say "  Installing $nice..."
-  if apk update && apk add "$pkg"; then
-    say "  Done."
+  if grep -q ' /apps ' /proc/mounts 2>/dev/null; then
+    if [ ! -f /apps/etc/apk/world ]; then
+      mkdir -p /apps/etc/apk
+      cp -a /etc/apk/keys /apps/etc/apk/ 2>/dev/null || true
+      cp /etc/apk/repositories /apps/etc/apk/
+      apk --root /apps --initdb add "$pkg"
+    else
+      apk --root /apps add "$pkg"
+    fi
+    st=$?
+  else
+    apk update && apk add "$pkg"
+    st=$?
+  fi
+  if [ "$st" -eq 0 ]; then
+    say "  Done. Stays after reboot."
   else
     say "  Could not install."
   fi
@@ -105,6 +120,8 @@ show_status() {
   say "  ip: $(ip -4 addr 2>/dev/null | awk '/inet /{print $2}' | head -3 | tr '\n' ' ')"
   say "  net: $(ls /sys/class/net 2>/dev/null | tr '\n' ' ')"
   say "  stick: $(grep -q ' /stick ' /proc/mounts && echo yes || echo no)"
+  say "  apps disk: $(grep -q ' /apps ' /proc/mounts && echo yes || echo no)"
+  say "  nano: $(command -v nano >/dev/null && echo yes || echo no)"
   wait_key
 }
 
@@ -133,6 +150,8 @@ stop_os() {
   banner
   say "  Bye."
   sync 2>/dev/null || true
+  umount /apps 2>/dev/null || true
+  losetup -d /dev/loop0 2>/dev/null || true
   umount /stick 2>/dev/null || true
   if [ "$1" = reboot ]; then
     reboot -f 2>/dev/null || echo b >/proc/sysrq-trigger 2>/dev/null

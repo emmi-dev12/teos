@@ -38,6 +38,11 @@ ins "$MOD/drivers/usb/host/xhci-hcd.ko"
 ins "$MOD/drivers/usb/host/xhci-pci.ko"
 ins "$MOD/drivers/usb/storage/usb-storage.ko"
 ins "$MOD/drivers/usb/storage/uas.ko"
+ins "$MOD/drivers/block/loop.ko"
+ins "$MOD/lib/crc/crc16.ko"
+ins "$MOD/fs/mbcache.ko"
+ins "$MOD/fs/jbd2/jbd2.ko"
+ins "$MOD/fs/ext4/ext4.ko"
 $BB mdev -s 2>/dev/null || true
 log "net $($BB ls /sys/class/net 2>/dev/null)"
 log "blk $($BB ls /dev/sd* /dev/vd* 2>/dev/null)"
@@ -54,6 +59,20 @@ for d in /dev/vda1 /dev/vda /dev/sda1 /dev/sda /dev/sdb1 /dev/sdb; do
   fi
 done
 [ -n "$mounted" ] || log "no stick"
+if [ -f /stick/APPS.IMG ]; then
+  $BB mkdir -p /apps
+  if $BB losetup /dev/loop0 /stick/APPS.IMG 2>/tmp/loop.err; then
+    if $BB mount -t ext4 /dev/loop0 /apps 2>/tmp/amnt.err; then
+      log "apps mounted"
+    else
+      log "apps mount fail $($BB cat /tmp/amnt.err 2>/dev/null)"
+    fi
+  else
+    log "loop fail $($BB cat /tmp/loop.err 2>/dev/null)"
+  fi
+fi
+export PATH=/apps/usr/bin:/apps/bin:$PATH
+export LD_LIBRARY_PATH=/apps/usr/lib:/apps/lib
 if [ -f /stick/NAME.TXT ]; then
   $BB cp /stick/NAME.TXT /etc/hostname
 elif [ -f /stick/hostname ]; then
