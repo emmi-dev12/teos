@@ -8,7 +8,7 @@ use alloc::vec::Vec;
 use uefi::CString16;
 use uefi::fs::FileSystem;
 use uefi::prelude::*;
-use uefi::proto::console::gop::{BltOp, BltPixel, GraphicsOutput};
+use uefi::proto::console::gop::{BltOp, BltPixel, BltRegion, GraphicsOutput};
 use uefi::proto::console::pointer::Pointer;
 use uefi::proto::console::text::{Key, ScanCode};
 
@@ -67,6 +67,7 @@ fn anim_name(a: u8) -> &'static str {
         2 => "orbit",
         3 => "rain",
         4 => "bounce",
+        5 => "clip",
         _ => "orbit",
     }
 }
@@ -92,6 +93,7 @@ fn parse_cfg(text: &str) -> Cfg {
                         "orbit" => 2,
                         "rain" => 3,
                         "bounce" => 4,
+                        "clip" => 5,
                         _ => 2,
                     }
                 }
@@ -151,6 +153,55 @@ fn save_cfg(c: &Cfg) -> bool {
         return fs.write(&*path, body.as_bytes()).is_ok();
     }
     false
+}
+
+struct Clip {
+    w: usize,
+    h: usize,
+    n: usize,
+    pix: Vec<BltPixel>,
+}
+
+fn load_clip() -> Option<Clip> {
+    let proto = boot::get_image_file_system(boot::image_handle()).ok()?;
+    let mut fs = FileSystem::new(proto);
+    let path = CString16::try_from("CLIP.VID").ok()?;
+    let bytes = fs.read(&*path).ok()?;
+    if bytes.len() < 14 || &bytes[0..8] != b"TEOSCLIP" {
+        return None;
+    }
+    let w = u16::from_le_bytes([bytes[8], bytes[9]]) as usize;
+    let h = u16::from_le_bytes([bytes[10], bytes[11]]) as usize;
+    let n = u16::from_le_bytes([bytes[12], bytes[13]]) as usize;
+    let need = 14 + w.checked_mul(h)?.checked_mul(3)?.checked_mul(n)?;
+    if w == 0 || h == 0 || n == 0 || w > 640 || h > 400 || n > 90 || bytes.len() < need {
+        return None;
+    }
+    let mut pix = Vec::with_capacity(w * h * n);
+    for chunk in bytes[14..need].chunks_exact(3) {
+        pix.push(BltPixel::new(chunk[0], chunk[1], chunk[2]));
+    }
+    Some(Clip { w, h, n, pix })
+}
+
+fn blit_clip(gop: &mut GraphicsOutput, clip: &Clip, ox: usize, oy: usize, pw: usize, ph: usize, t: u32) {
+    fill(gop, BG, ox, oy, pw, ph);
+    let fi = (t as usize / 2) % clip.n;
+    let off = fi * clip.w * clip.h;
+    let end = off + clip.w * clip.h;
+    if end > clip.pix.len() {
+        return;
+    }
+    let dw = clip.w.min(pw);
+    let dh = clip.h.min(ph);
+    let dx = ox + pw.saturating_sub(dw) / 2;
+    let dy = oy + ph.saturating_sub(dh) / 2;
+    let _ = gop.blt(BltOp::BufferToVideo {
+        buffer: &clip.pix[off..end],
+        src: BltRegion::Full,
+        dest: (dx, dy),
+        dims: (dw, dh),
+    });
 }
 
 fn glyph_bits(ch: u8) -> [u8; 7] {
@@ -241,7 +292,25 @@ fn sin_cos(deg: i32) -> (i32, i32) {
     }
 }
 
-fn preview(gop: &mut GraphicsOutput, cfg: &Cfg, ox: usize, oy: usize, pw: usize, ph: usize, t: u32) {
+fn preview(
+    gop: &mut GraphicsOutput,
+    cfg: &Cfg,
+    clip: Option<&Clip>,
+    ox: usize,
+    oy: usize,
+    pw: usize,
+    ph: usize,
+    t: u32,
+) {
+    if cfg.animation == 5 {
+        if let Some(c) = clip {
+            blit_clip(gop, c, ox, oy, pw, ph, t);
+            return;
+        }
+        fill(gop, BG, ox, oy, pw, ph);
+        text(gop, ox + 16, oy + ph / 2, "NO CLIP YET", 3, MUTE, ox + pw, oy + ph);
+        return;
+    }
     fill(gop, BG, ox, oy, pw, ph);
     let base = 8usize;
     let col = ink(cfg);
@@ -337,6 +406,11 @@ fn apply_hit(cfg: &mut Cfg, h: &Hit) -> bool {
 fn main() -> Status {
     uefi::helpers::init().ok();
     let mut cfg = load_cfg();
+    let clip = load_clip();
+    let has_clip = clip.is_some();
+    if cfg.animation == 5 && !has_clip {
+        cfg.animation = 2;
+    }
     let handle = match boot::get_handle_for_protocol::<GraphicsOutput>() {
         Ok(h) => h,
         Err(_) => return Status::ABORTED,
@@ -353,33 +427,33 @@ fn main() -> Status {
     let mut my = h / 2;
     let mut t = 0u32;
     let mut saved = false;
-    let looks = ["CIRCLES", "GROW", "RAIN", "BOUNCE"];
+    let looks = ["CIRCLES", "GROW", "RAIN", "BOUNCE", "MY CLIP"];
     let colors = ["BLUE", "GREEN", "ORANGE", "PINK"];
     let times = ["SHORT", "MEDIUM", "LONG"];
 
     loop {
         let preview_h = h * 40 / 100;
         let gap = 10usize;
-        let tw = w.saturating_sub(gap * 5) / 4;
+        let tw = w.saturating_sub(gap * 6) / 5;
         let th = 48usize;
         let row_y = preview_h + 32;
         let mut hits: Vec<Hit> = Vec::new();
-        for i in 0..4 {
+        for i in 0..5 {
             hits.push(Hit {
                 x: gap + i * (tw + gap),
                 y: row_y,
                 w: tw,
                 h: th,
                 kind: 1,
-                id: [2, 1, 3, 4][i],
+                id: [2, 1, 3, 4, 5][i],
             });
         }
         let row2 = row_y + th + gap;
         for i in 0..4 {
             hits.push(Hit {
-                x: gap + i * (tw + gap),
+                x: gap + i * ((w.saturating_sub(gap * 5) / 4) + gap),
                 y: row2,
-                w: tw,
+                w: w.saturating_sub(gap * 5) / 4,
                 h: th,
                 kind: 2,
                 id: i as u8,
@@ -407,13 +481,15 @@ fn main() -> Status {
         });
 
         fill(&mut gop, BG, 0, 0, w, h);
-        preview(&mut gop, &cfg, 0, 0, w, preview_h, t);
+        preview(&mut gop, &cfg, clip.as_ref(), 0, 0, w, preview_h, t);
         text(&mut gop, 16, preview_h + 8, "LOOK", 2, MUTE, w, h);
-        for i in 0..4 {
-            tile(&mut gop, &hits[i], cfg.animation == hits[i].id, looks[i], w, h);
+        for i in 0..5 {
+            let on = cfg.animation == hits[i].id;
+            let label = if i == 4 && !has_clip { "NO CLIP" } else { looks[i] };
+            tile(&mut gop, &hits[i], on && !(i == 4 && !has_clip), label, w, h);
         }
         for i in 0..4 {
-            let ht = &hits[4 + i];
+            let ht = &hits[5 + i];
             fill(&mut gop, if cfg.color == i as u8 { ON } else { PANEL }, ht.x, ht.y, ht.w, ht.h);
             fill(
                 &mut gop,
@@ -426,9 +502,9 @@ fn main() -> Status {
             text(&mut gop, ht.x + 12, ht.y + ht.h / 2 - 7, colors[i], 2, WHITE, w, h);
         }
         for i in 0..3 {
-            tile(&mut gop, &hits[8 + i], cfg.length == i as u8, times[i], w, h);
+            tile(&mut gop, &hits[9 + i], cfg.length == i as u8, times[i], w, h);
         }
-        let sv = &hits[11];
+        let sv = &hits[12];
         fill(&mut gop, ink(&cfg), sv.x, sv.y, sv.w, sv.h);
         text(
             &mut gop,
@@ -459,6 +535,9 @@ fn main() -> Status {
                 if st.button[0] {
                     for hit in hits.iter() {
                         if in_hit(hit, mx, my) {
+                            if hit.kind == 1 && hit.id == 5 && !has_clip {
+                                continue;
+                            }
                             if apply_hit(&mut cfg, hit) {
                                 saved = save_cfg(&cfg);
                             } else {
@@ -483,7 +562,14 @@ fn main() -> Status {
                         1 => 4,
                         2 => 1,
                         3 => 2,
-                        4 => 3,
+                        4 => {
+                            if has_clip {
+                                5
+                            } else {
+                                3
+                            }
+                        }
+                        5 => 4,
                         _ => 2,
                     };
                     saved = false;
@@ -493,7 +579,14 @@ fn main() -> Status {
                         1 => 2,
                         2 => 3,
                         3 => 4,
-                        4 => 1,
+                        4 => {
+                            if has_clip {
+                                5
+                            } else {
+                                1
+                            }
+                        }
+                        5 => 1,
                         _ => 2,
                     };
                     saved = false;

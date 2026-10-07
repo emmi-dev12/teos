@@ -7,7 +7,9 @@
 
 TeOS is Linux (so apps can install) plus a **picture settings screen** at boot. You do **not** edit config files.
 
-Top is a live preview. Then boxes: **Circles / Grow / Rain / Bounce**, colors, **Short / Medium / Long**, **Save**. Click, or arrows then Enter.
+Top is a live preview. Then boxes: **Circles / Grow / Rain / Bounce / My clip**, colors, **Short / Medium / Long**, **Save**. Click, or arrows then Enter.
+
+Your own video: `./scripts/add-clip.sh ~/Desktop/your.mp4` then tap **My clip**. (The boot chip cannot open Photos — the file has to be on the stick.)
 
 Linux apps in QEMU still use a login for now (`root`, empty password). Same-style settings there is next.
 
