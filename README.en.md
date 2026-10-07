@@ -15,9 +15,8 @@ Linux: `./scripts/run-qemu.sh` then **Start** (or space). Home screen 1–8 (nam
 
 ```bash
 ./scripts/build.sh
-./scripts/run-qemu.sh          # splash
-./scripts/fetch-alpine.sh
-./scripts/run-linux.sh         # Alpine: login root, empty password, then apk add nano
+./scripts/run-qemu.sh          # splash, then Start
+./scripts/run-linux.sh         # skip splash, home screen
 ```
 
 ## USB
