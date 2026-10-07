@@ -11,7 +11,7 @@ Top is a live preview. Then boxes: **Circles / Grow / Rain / Bounce / My clip**,
 
 Your own video: tap **Upload** on the boot screen, or on this Mac run `./scripts/upload-gui.py` (a real file picker). Firmware cannot open Photos.
 
-Linux apps in QEMU still use a login for now (`root`, empty password). Same-style settings there is next.
+Linux: `./scripts/run-linux.sh` — **no login**. Type 1–4 (name, apps, terminal, shut down).
 
 ```bash
 ./scripts/build.sh

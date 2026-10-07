@@ -3,6 +3,7 @@
 /kernel/target
 /esp
 /build
+/linux-root
 *.img
 *.fd
 OVMF_VARS.fd

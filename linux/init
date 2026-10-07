@@ -1,0 +1,11 @@
+#!/bin/sh
+# PID 1 inside the TeOS Linux initrd.
+/bin/busybox mkdir -p /proc /sys /dev /tmp /run
+/bin/busybox mount -t proc proc /proc
+/bin/busybox mount -t sysfs sys /sys
+/bin/busybox mount -t devtmpfs dev /dev 2>/dev/null || true
+/bin/busybox hostname -F /etc/hostname 2>/dev/null || /bin/busybox hostname teos
+export HOME=/root
+export PATH=/sbin:/usr/sbin:/bin:/usr/bin
+cd /root
+exec /usr/local/bin/teos-ui
