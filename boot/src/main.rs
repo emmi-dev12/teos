@@ -187,6 +187,9 @@ fn load_clip() -> Option<Clip> {
 }
 
 fn start_linux() {
+    use uefi::boot::{OpenProtocolAttributes, OpenProtocolParams};
+    use uefi_raw::protocol::loaded_image::LoadedImageProtocol;
+
     let Ok(proto) = boot::get_image_file_system(boot::image_handle()) else {
         return;
     };
@@ -206,6 +209,18 @@ fn start_linux() {
     ) else {
         return;
     };
+    let our_dev = unsafe {
+        boot::open_protocol::<LoadedImage>(
+            OpenProtocolParams {
+                handle: boot::image_handle(),
+                agent: boot::image_handle(),
+                controller: None,
+            },
+            OpenProtocolAttributes::GetProtocol,
+        )
+        .ok()
+        .and_then(|li| li.device())
+    };
     let opts = CString16::try_from("console=ttyS0 console=tty0 rdinit=/init initrd=\\EFI\\TEOS\\initrd.gz")
         .ok();
     if let Some(opts) = opts {
@@ -214,6 +229,10 @@ fn start_linux() {
             let bytes = leaked.num_chars() * 2 + 2;
             unsafe {
                 li.set_load_options(leaked.as_ptr().cast::<u8>(), bytes as u32);
+                if let Some(dev) = our_dev {
+                    let raw = &mut *(&mut *li as *mut LoadedImage as *mut LoadedImageProtocol);
+                    raw.device_handle = dev.as_ptr();
+                }
             }
         }
     }

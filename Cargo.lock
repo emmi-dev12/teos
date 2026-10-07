@@ -91,6 +91,7 @@ name = "teos-boot"
 version = "0.1.0"
 dependencies = [
  "uefi",
+ "uefi-raw",
 ]
 
 [[package]]

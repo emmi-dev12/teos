@@ -8,4 +8,10 @@
 export HOME=/root
 export PATH=/sbin:/usr/sbin:/bin:/usr/bin
 cd /root
+if [ -c /dev/ttyS0 ]; then
+  exec /usr/local/bin/teos-ui <>/dev/ttyS0 >&0 2>&1
+fi
+if [ -c /dev/console ]; then
+  exec /usr/local/bin/teos-ui <>/dev/console >&0 2>&1
+fi
 exec /usr/local/bin/teos-ui

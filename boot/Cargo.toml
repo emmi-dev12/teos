@@ -10,3 +10,4 @@ path = "src/main.rs"
 
 [dependencies]
 uefi = { version = "0.33", features = ["panic_handler", "alloc", "global_allocator"] }
+uefi-raw = "0.9"
