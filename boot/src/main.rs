@@ -211,6 +211,7 @@ fn glyph_bits(ch: u8) -> [u8; 7] {
         b'C' => [0b01111, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b01111],
         b'D' => [0b11110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b11110],
         b'E' => [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111],
+        b'F' => [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b10000],
         b'G' => [0b01111, 0b10000, 0b10000, 0b10111, 0b10001, 0b10001, 0b01110],
         b'H' => [0b10001, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001],
         b'I' => [0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b11111],
@@ -427,6 +428,7 @@ fn main() -> Status {
     let mut my = h / 2;
     let mut t = 0u32;
     let mut saved = false;
+    let mut upload = false;
     let looks = ["CIRCLES", "GROW", "RAIN", "BOUNCE", "MY CLIP"];
     let colors = ["BLUE", "GREEN", "ORANGE", "PINK"];
     let times = ["SHORT", "MEDIUM", "LONG"];
@@ -472,16 +474,61 @@ fn main() -> Status {
             });
         }
         hits.push(Hit {
-            x: w / 2 - 90,
+            x: w / 2 - 200,
             y: row3 + th + gap,
             w: 180,
             h: 52,
             kind: 4,
             id: 0,
         });
+        hits.push(Hit {
+            x: w / 2 + 20,
+            y: row3 + th + gap,
+            w: 200,
+            h: 52,
+            kind: 6,
+            id: 0,
+        });
+
+        if upload {
+            hits.clear();
+            hits.push(Hit {
+                x: 24,
+                y: h.saturating_sub(70),
+                w: 140,
+                h: 48,
+                kind: 7,
+                id: 0,
+            });
+            if has_clip {
+                hits.push(Hit {
+                    x: w.saturating_sub(220),
+                    y: h.saturating_sub(70),
+                    w: 200,
+                    h: 48,
+                    kind: 8,
+                    id: 0,
+                });
+            }
+        }
 
         fill(&mut gop, BG, 0, 0, w, h);
         preview(&mut gop, &cfg, clip.as_ref(), 0, 0, w, preview_h, t);
+        if upload {
+            fill(&mut gop, PANEL, 20, preview_h + 8, w.saturating_sub(40), h.saturating_sub(preview_h + 16));
+            text(&mut gop, 40, preview_h + 28, "UPLOAD", 3, WHITE, w, h);
+            text(&mut gop, 40, preview_h + 70, "COPY A VIDEO ONTO THIS STICK", 2, WHITE, w, h);
+            text(&mut gop, 40, preview_h + 100, "IN FINDER  THEN REBOOT", 2, MUTE, w, h);
+            if has_clip {
+                text(&mut gop, 40, preview_h + 140, "CLIP IS READY", 3, ink(&cfg), w, h);
+            } else {
+                text(&mut gop, 40, preview_h + 140, "NO CLIP YET", 3, MUTE, w, h);
+            }
+            tile(&mut gop, &hits[0], false, "BACK", w, h);
+            if hits.len() > 1 {
+                tile(&mut gop, &hits[1], true, "USE CLIP", w, h);
+            }
+        } else {
         text(&mut gop, 16, preview_h + 8, "LOOK", 2, MUTE, w, h);
         for i in 0..5 {
             let on = cfg.animation == hits[i].id;
@@ -516,6 +563,9 @@ fn main() -> Status {
             w,
             h,
         );
+        let up = &hits[13];
+        fill(&mut gop, WHITE, up.x, up.y, up.w, up.h);
+        text(&mut gop, up.x + 24, up.y + 16, "UPLOAD", 3, BG, w, h);
         text(
             &mut gop,
             16,
@@ -526,6 +576,7 @@ fn main() -> Status {
             w,
             h,
         );
+        }
         fill(&mut gop, WHITE, mx.saturating_sub(2), my.saturating_sub(2), 8, 8);
 
         if let Some(p) = ptr.as_mut() {
@@ -535,6 +586,20 @@ fn main() -> Status {
                 if st.button[0] {
                     for hit in hits.iter() {
                         if in_hit(hit, mx, my) {
+                            if hit.kind == 6 {
+                                upload = true;
+                                continue;
+                            }
+                            if hit.kind == 7 {
+                                upload = false;
+                                continue;
+                            }
+                            if hit.kind == 8 {
+                                cfg.animation = 5;
+                                upload = false;
+                                saved = false;
+                                continue;
+                            }
                             if hit.kind == 1 && hit.id == 5 && !has_clip {
                                 continue;
                             }
