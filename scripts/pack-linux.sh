@@ -45,6 +45,13 @@ unsquashfs -f -d build/mods build/modloop-virt \
     modules/$KVER/kernel/drivers/net/virtio_net.ko \
     modules/$KVER/kernel/drivers/net/ethernet/intel/e1000/e1000.ko \
     modules/$KVER/kernel/net/packet/af_packet.ko \
+    modules/$KVER/kernel/drivers/block/virtio_blk.ko \
+    modules/$KVER/kernel/drivers/usb/common/usb-common.ko \
+    modules/$KVER/kernel/drivers/usb/core/usbcore.ko \
+    modules/$KVER/kernel/drivers/usb/host/xhci-hcd.ko \
+    modules/$KVER/kernel/drivers/usb/host/xhci-pci.ko \
+    modules/$KVER/kernel/drivers/usb/storage/usb-storage.ko \
+    modules/$KVER/kernel/drivers/usb/storage/uas.ko \
     >/dev/null
 if [ -d build/mods/modules/$KVER ]; then
   mkdir -p linux-root/lib/modules/$KVER

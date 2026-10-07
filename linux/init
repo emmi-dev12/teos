@@ -31,16 +31,32 @@ ins "$MOD/drivers/net/net_failover.ko"
 ins "$MOD/drivers/net/virtio_net.ko"
 ins "$MOD/drivers/net/ethernet/intel/e1000/e1000.ko"
 ins "$MOD/net/packet/af_packet.ko"
+ins "$MOD/drivers/block/virtio_blk.ko"
+ins "$MOD/drivers/usb/common/usb-common.ko"
+ins "$MOD/drivers/usb/core/usbcore.ko"
+ins "$MOD/drivers/usb/host/xhci-hcd.ko"
+ins "$MOD/drivers/usb/host/xhci-pci.ko"
+ins "$MOD/drivers/usb/storage/usb-storage.ko"
+ins "$MOD/drivers/usb/storage/uas.ko"
 $BB mdev -s 2>/dev/null || true
 log "net $($BB ls /sys/class/net 2>/dev/null)"
 log "blk $($BB ls /dev/sd* /dev/vd* 2>/dev/null)"
-for d in /dev/sda1 /dev/sda /dev/vda1 /dev/vda /dev/sdb1 /dev/sdb; do
-  if [ -b "$d" ] && $BB mount -t vfat "$d" /stick 2>/dev/null; then
-    log "mounted $d"
-    break
+mounted=
+for d in /dev/vda1 /dev/vda /dev/sda1 /dev/sda /dev/sdb1 /dev/sdb; do
+  if [ -b "$d" ]; then
+    if $BB mount -t vfat -o rw,iocharset=iso8859-1 "$d" /stick 2>/tmp/mnt.err; then
+      log "mounted $d"
+      mounted=1
+      break
+    else
+      log "mount fail $d $($BB cat /tmp/mnt.err 2>/dev/null)"
+    fi
   fi
 done
-if [ -f /stick/hostname ]; then
+[ -n "$mounted" ] || log "no stick"
+if [ -f /stick/NAME.TXT ]; then
+  $BB cp /stick/NAME.TXT /etc/hostname
+elif [ -f /stick/hostname ]; then
   $BB cp /stick/hostname /etc/hostname
 fi
 $BB hostname -F /etc/hostname 2>/dev/null || $BB hostname teos

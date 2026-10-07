@@ -3,6 +3,7 @@ set -eu
 cd "$(dirname "$0")/.."
 ./scripts/build.sh
 ./scripts/pack-linux.sh
+./scripts/make-stick-img.sh
 
 CODE=""
 VARS_SRC=""
@@ -47,6 +48,7 @@ exec qemu-system-x86_64 \
   -drive if=pflash,format=raw,readonly=on,file="$CODE" \
   $FLASH_VARS \
   -drive format=raw,file=fat:rw:esp \
+  -drive file=build/stick.img,format=raw,if=virtio \
   -nic user,model=virtio \
   -serial stdio \
   $DISP

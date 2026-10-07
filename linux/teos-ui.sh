@@ -8,7 +8,7 @@ say() { printf '%s\n' "$*"; }
 banner() {
   printf '\033[2J\033[H'
   printf '\033[1;37;44m'
-  printf '  TEOS                                                    \n'
+  printf '  TEOS  %s\n' "$(date '+%Y-%m-%d %H:%M' 2>/dev/null)"
   printf '\033[0m\n'
 }
 
@@ -34,7 +34,8 @@ set_name() {
   [ -z "$n" ] && return
   printf '%s\n' "$n" >/etc/hostname
   hostname "$n" 2>/dev/null || true
-  printf '%s\n' "$n" >/stick/hostname 2>/dev/null || true
+  printf '%s\n' "$n" >/stick/NAME.TXT 2>/dev/null || printf '%s\n' "$n" >/stick/hostname 2>/dev/null || true
+  sync 2>/dev/null || true
   say ""
   say "  OK. It is called $n"
   wait_key
@@ -103,7 +104,7 @@ show_status() {
   say "  name: $(cat /etc/hostname 2>/dev/null)"
   say "  ip: $(ip -4 addr 2>/dev/null | awk '/inet /{print $2}' | head -3 | tr '\n' ' ')"
   say "  net: $(ls /sys/class/net 2>/dev/null | tr '\n' ' ')"
-  say "  stick: $([ -d /stick ] && ls /stick >/dev/null 2>&1 && echo yes || echo no)"
+  say "  stick: $(grep -q ' /stick ' /proc/mounts && echo yes || echo no)"
   wait_key
 }
 
@@ -115,6 +116,28 @@ open_web() {
     say "  Install web first: Get apps -> 2"
     wait_key
   fi
+}
+
+calc() {
+  banner
+  say "  Type like  2+2  or  10*3  then Enter. q = back"
+  while true; do
+    printf '  = '
+    read -r e || return
+    [ "$e" = q ] && return
+    awk "BEGIN { print $e }" 2>/dev/null || say "  nope"
+  done
+}
+
+stop_os() {
+  banner
+  say "  Bye."
+  sync 2>/dev/null || true
+  umount /stick 2>/dev/null || true
+  if [ "$1" = reboot ]; then
+    reboot -f 2>/dev/null || echo b >/proc/sysrq-trigger 2>/dev/null
+  fi
+  poweroff -f 2>/dev/null || halt -f 2>/dev/null || exit 0
 }
 
 while true; do
@@ -130,7 +153,9 @@ while true; do
   say "  5) Web"
   say "  6) Status"
   say "  7) Terminal"
-  say "  8) Shut down"
+  say "  8) Calculator"
+  say "  9) Reboot"
+  say "  0) Shut down"
   printf '\n  Type a number, then Enter: '
   read -r c || c=7
   case "$c" in
@@ -146,10 +171,8 @@ while true; do
       say ""
       /bin/sh
       ;;
-    8)
-      banner
-      say "  Bye."
-      poweroff -f 2>/dev/null || halt -f 2>/dev/null || exit 0
-      ;;
+    8) calc ;;
+    9) stop_os reboot ;;
+    0) stop_os halt ;;
   esac
 done
