@@ -49,10 +49,10 @@ get_apps() {
   esac
   say ""
   say "  Installing $nice..."
-  if apk update >/tmp/teos-apk.log 2>&1 && apk add "$pkg" >>/tmp/teos-apk.log 2>&1; then
-    say "  Done. Type  $pkg  later if you open Terminal."
+  if apk update && apk add "$pkg"; then
+    say "  Done. In Terminal type:  $pkg"
   else
-    say "  Could not. Internet missing or Alpine modules not loaded yet."
+    say "  Could not install."
   fi
   wait_key
 }

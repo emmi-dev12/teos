@@ -5,11 +5,22 @@ $BB mkdir -p /proc /sys /dev /tmp /run /stick /lib/modules
 $BB mount -t proc proc /proc
 $BB mount -t sysfs sys /sys
 $BB mount -t devtmpfs dev /dev 2>/dev/null || true
+log() { $BB printf 'teos: %s\n' "$*" >/dev/ttyS0 2>/dev/null || true; }
 export HOME=/root
 export PATH=/sbin:/usr/sbin:/bin:/usr/bin
 KVER=6.18.52-0-virt
 MOD=/lib/modules/$KVER/kernel
-ins() { [ -f "$1" ] && $BB insmod "$1" 2>/dev/null || true; }
+ins() {
+  if [ -f "$1" ]; then
+    if $BB insmod "$1" 2>/tmp/ins.err; then
+      log "mod ok $($BB basename "$1")"
+    else
+      log "mod fail $($BB basename "$1")"
+    fi
+  else
+    log "mod missing $1"
+  fi
+}
 ins "$MOD/drivers/scsi/sd_mod.ko"
 ins "$MOD/fs/nls/nls_cp437.ko"
 ins "$MOD/fs/nls/nls_iso8859-1.ko"
@@ -19,9 +30,13 @@ ins "$MOD/net/core/failover.ko"
 ins "$MOD/drivers/net/net_failover.ko"
 ins "$MOD/drivers/net/virtio_net.ko"
 ins "$MOD/drivers/net/ethernet/intel/e1000/e1000.ko"
+ins "$MOD/net/packet/af_packet.ko"
 $BB mdev -s 2>/dev/null || true
+log "net $($BB ls /sys/class/net 2>/dev/null)"
+log "blk $($BB ls /dev/sd* /dev/vd* 2>/dev/null)"
 for d in /dev/sda1 /dev/sda /dev/vda1 /dev/vda /dev/sdb1 /dev/sdb; do
   if [ -b "$d" ] && $BB mount -t vfat "$d" /stick 2>/dev/null; then
+    log "mounted $d"
     break
   fi
 done
@@ -29,13 +44,12 @@ if [ -f /stick/hostname ]; then
   $BB cp /stick/hostname /etc/hostname
 fi
 $BB hostname -F /etc/hostname 2>/dev/null || $BB hostname teos
-# network (best effort)
-for n in eth0 ens3 ens4 enp0s3; do
-  if [ -d /sys/class/net/"$n" ]; then
-    $BB ip link set "$n" up 2>/dev/null || true
-    $BB udhcpc -i "$n" -n -q -t 5 2>/dev/null || true
-    break
-  fi
+export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+for n in $($BB ls /sys/class/net 2>/dev/null); do
+  [ "$n" = "lo" ] && continue
+  log "dhcp $n"
+  $BB ip link set "$n" up 2>/dev/null || true
+  $BB udhcpc -i "$n" -n -q -t 8 >/dev/ttyS0 2>&1 || true
 done
 cd /root
 UI=/usr/local/bin/teos-ui
