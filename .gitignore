@@ -10,3 +10,7 @@
 *.fd
 OVMF_VARS.fd
 .DS_Store
+
+third_party/brcm/*.bin
+third_party/brcm/*.txt
+third_party/brcm/*.clm_blob

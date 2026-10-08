@@ -9,8 +9,9 @@ mkdir -p "$OUT"
 MODEL=$(sysctl -n hw.model 2>/dev/null || echo unknown)
 echo "model: $MODEL"
 if [ "$MODEL" != "MacBookPro15,1" ]; then
-  echo "This script is for the 2018 15-inch (MacBookPro15,1). This Mac is $MODEL."
-  echo "Still looking for Kauai files in case you copied them here."
+  echo "Run this on the 2018 15-inch while in macOS. This Mac is $MODEL."
+  echo "NVRAM is board-specific. Do not copy firmware from another Mac."
+  exit 2
 fi
 
 # Known Kauai names from t2linux (BCM4364 / MacBookPro15,1).
