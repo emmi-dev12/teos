@@ -91,6 +91,12 @@ if [ -d build/mods/modules/$KVER ]; then
   cp -R build/mods/modules/$KVER/kernel linux-root/lib/modules/$KVER/
 fi
 
+./scripts/fetch-t2-kernel.sh
+if [ -d build/t2deb/extract/lib/modules ]; then
+  mkdir -p linux-root/lib/modules
+  cp -R build/t2deb/extract/lib/modules/. linux-root/lib/modules/
+fi
+
 # Drop weight: docs, man, unused share. Keep apk + ssl.
 rm -rf linux-root/usr/share/man linux-root/usr/share/doc \
   linux-root/usr/share/misc linux-root/usr/share/aclocal \
@@ -105,6 +111,11 @@ find linux-root -name '*.a' -delete 2>/dev/null || true
   find . | cpio -o -H newc 2>/dev/null
 ) | zstd -1 -T0 -o build/teos-initrd.gz --force
 mkdir -p esp/EFI/TEOS
-cp -f build/vmlinuz-virt esp/EFI/TEOS/vmlinuz
+if [ -f build/vmlinuz-t2 ]; then
+  cp -f build/vmlinuz-t2 esp/EFI/TEOS/vmlinuz
+  echo "kernel t2linux $(file -b build/vmlinuz-t2 | cut -c1-80)"
+else
+  cp -f build/vmlinuz-virt esp/EFI/TEOS/vmlinuz
+fi
 cp -f build/teos-initrd.gz esp/EFI/TEOS/initrd.gz
 echo "packed build/teos-initrd.gz ($(wc -c < build/teos-initrd.gz) bytes)"

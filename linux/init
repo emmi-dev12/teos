@@ -8,8 +8,9 @@ $BB mount -t devtmpfs dev /dev 2>/dev/null || true
 log() { $BB printf 'teos: %s\n' "$*" >/dev/ttyS0 2>/dev/null || true; }
 export HOME=/root
 export PATH=/sbin:/usr/sbin:/bin:/usr/bin
-KVER=6.18.52-0-virt
+KVER=$(uname -r 2>/dev/null || echo 6.18.52-0-virt)
 MOD=/lib/modules/$KVER/kernel
+log "kver $KVER"
 ins() {
   if [ -f "$1" ]; then
     $BB insmod "$1" 2>/dev/null || log "mod fail $($BB basename "$1")"
@@ -61,6 +62,13 @@ ins "$MOD/drivers/hid/hid-generic.ko"
 ins "$MOD/drivers/hid/usbhid/usbhid.ko"
 ins "$MOD/drivers/input/evdev.ko"
 ins "$MOD/drivers/input/mousedev.ko"
+# t2linux (GPL): keyboard/trackpad over BCE. Harmless if missing (QEMU).
+ins "$MOD/drivers/staging/t2bce/t2bce_dma/t2bce_dma.ko"
+ins "$MOD/drivers/staging/t2bce/t2bce_core/t2bce_core.ko"
+ins "$MOD/drivers/staging/t2bce/t2bce_vhci/t2bce_vhci.ko"
+ins "$MOD/drivers/hid/hid-apple.ko"
+ins "$MOD/drivers/hid/hid-appletb-bl.ko"
+ins "$MOD/drivers/hwmon/applesmc.ko"
 $BB mdev -s 2>/dev/null || true
 log "fb $($BB ls /dev/fb* 2>/dev/null)"
 if grep -qw teos_smoke /proc/cmdline && [ -x /usr/local/bin/teos-gui ]; then

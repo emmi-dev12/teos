@@ -35,13 +35,13 @@ No extra download on the 15,1 for these:
 - Kernel cmdline from the [t2linux basic setup](https://t2linux.org/guides/postinstall/): `intel_iommu=on iommu=pt pm_async=off`
 - Public **apple_set_os** EFI protocol call (same idea as [0xbb/apple_set_os.efi](https://github.com/0xbb/apple_set_os.efi)) so the laptop may keep the Intel GPU awake. Harmless if the protocol is missing (QEMU).
 
-## What still needs a t2linux kernel
+## Kernel (already on the stick)
 
-Vanilla Alpine **will not** drive internal keyboard, trackpad, Touch Bar, speakers, fans, or Broadcom Wi‑Fi. That kernel is [t2linux](https://t2linux.org/) — GPL patches, not something we reverse-engineer.
+Boot uses the official **t2linux** kernel `6.18.54-1-t2-bookworm` ([T2-Debian-and-Ubuntu-Kernel](https://github.com/t2linux/T2-Debian-and-Ubuntu-Kernel), GPL-2). Fetched on the **build Mac**, then copied onto the USB. The 15,1 does not need the internet for that.
 
-Drop a t2 `vmlinuz` on the stick as `EFI/TEOS/vmlinuz` **on the build Mac** (internet there is fine). The 15,1 then boots it with no network.
+It includes t2bce (keyboard/trackpad over the T2 bridge), hid-apple, applesmc. QEMU has no T2 chip — those modules fail there and that is fine.
 
-Wi‑Fi firmware is Apple’s. We do **not** ship it. If you already copied `brcmfmac4364-pcie.*` off **this** MacBook (MacBookPro15,1 / Kauai) while in macOS, put them in `third_party/brcm/` on the build Mac; `make-usb.sh` copies them if present. See the [t2linux wifi guide](https://t2linux.org/guides/wifi/).
+Wi‑Fi still needs **your** Broadcom firmware in `third_party/brcm/` (we do not ship Apple blobs).
 
 ## Boot
 

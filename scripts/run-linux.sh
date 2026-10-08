@@ -6,11 +6,13 @@ cd "$(dirname "$0")/.."
 DISP="-display cocoa"
 if [ "$(uname -s)" != "Darwin" ]; then DISP="-display gtk"; fi
 if [ "${TEOS_HEADLESS:-}" = 1 ]; then DISP="-display none"; fi
-echo "TeOS Linux — click a box, or type a number."
+KERN=build/vmlinuz-virt
+if [ -f build/vmlinuz-t2 ]; then KERN=build/vmlinuz-t2; fi
+echo "TeOS Linux — click a box, or type a number. kernel=$KERN"
 exec qemu-system-x86_64 \
   -machine q35 \
   -m 384 \
-  -kernel build/vmlinuz-virt \
+  -kernel "$KERN" \
   -initrd build/teos-initrd.gz \
   -append "console=ttyS0 rdinit=/init quiet" \
   -vga std \

@@ -23,7 +23,7 @@ Linux: `./scripts/run-qemu.sh` then **Start** (or space). Click the boxes (or ty
 
 ## USB
 
-Read **DISCLAIMER.md** and **docs/t2-boot.md**. Scripts refuse `disk0`. T2 iommu cmdline + apple_set_os are baked into the USB (offline). Internal keyboard/Wi‑Fi still need a t2linux kernel dropped on the stick at build time.
+Read **DISCLAIMER.md** and **docs/t2-boot.md**. Scripts refuse `disk0`. USB kernel is **t2linux 6.18.54** (GPL, fetched at build). apple_set_os + iommu cmdline are baked in. We do not ship Apple Wi‑Fi firmware.
 
 ## License
 
