@@ -32,8 +32,8 @@ struct Cfg {
 impl Default for Cfg {
     fn default() -> Self {
         Self {
-            animation: 5,
-            color: 3,
+            animation: 0,
+            color: 0,
             length: 0,
         }
     }
@@ -65,6 +65,7 @@ fn duration_ms(c: &Cfg) -> u32 {
 
 fn anim_name(a: u8) -> &'static str {
     match a {
+        0 => "none",
         1 => "pulse",
         2 => "orbit",
         3 => "rain",
@@ -91,6 +92,7 @@ fn parse_cfg(text: &str) -> Cfg {
             match k.trim() {
                 "animation" => {
                     c.animation = match v.trim() {
+                        "none" => 0,
                         "pulse" => 1,
                         "orbit" => 2,
                         "rain" => 3,
@@ -275,8 +277,9 @@ fn start_linux() {
 }
 
 fn blit_clip(gop: &mut GraphicsOutput, clip: &Clip, ox: usize, oy: usize, pw: usize, ph: usize, t: u32) {
-    fill(gop, BG, ox, oy, pw, ph);
-    let fi = (t as usize / 2) % clip.n;
+    // One frame only — looping GOP blits strobe on T2 panels.
+    let _ = t;
+    let fi = 0usize;
     let off = fi * clip.w * clip.h;
     let end = off + clip.w * clip.h;
     if end > clip.pix.len() {
@@ -403,6 +406,13 @@ fn preview(
         return;
     }
     fill(gop, BG, ox, oy, pw, ph);
+    if cfg.animation == 0 {
+        let sc = 8usize;
+        let x0 = ox as isize + (pw.saturating_sub(4 * 6 * sc) / 2) as isize;
+        let y0 = oy as isize + (ph.saturating_sub(7 * sc) / 2) as isize;
+        logo(gop, x0, y0, sc, ink(cfg), ox + pw, oy + ph);
+        return;
+    }
     let base = 8usize;
     let col = ink(cfg);
     let (x0, y0, sc) = match cfg.animation {
@@ -511,15 +521,11 @@ fn main() -> Status {
         Err(_) => return Status::ABORTED,
     };
     let (w, h) = gop.current_mode_info().resolution();
-    let mut ptr = boot::get_handle_for_protocol::<Pointer>()
-        .ok()
-        .and_then(|hh| boot::open_protocol_exclusive::<Pointer>(hh).ok());
-    let mut mx = w / 2;
-    let mut my = h / 2;
     let mut t = 0u32;
     let mut saved = false;
     let mut upload = false;
     let mut go_linux = false;
+    let mut dirty = true;
     let looks = ["CIRCLES", "GROW", "RAIN", "BOUNCE", "MY CLIP"];
     let colors = ["BLUE", "GREEN", "ORANGE", "PINK"];
     let times = ["SHORT", "MEDIUM", "LONG"];
@@ -611,6 +617,7 @@ fn main() -> Status {
             }
         }
 
+        if dirty {
         fill(&mut gop, BG, 0, 0, w, h);
         preview(&mut gop, &cfg, clip.as_ref(), 0, 0, w, preview_h, t);
         if upload {
@@ -679,45 +686,7 @@ fn main() -> Status {
             h,
         );
         }
-        fill(&mut gop, WHITE, mx.saturating_sub(2), my.saturating_sub(2), 8, 8);
-
-        if let Some(p) = ptr.as_mut() {
-            if let Ok(Some(st)) = p.read_state() {
-                mx = (mx as i32 + st.relative_movement[0] / 2048).clamp(0, w as i32 - 1) as usize;
-                my = (my as i32 + st.relative_movement[1] / 2048).clamp(0, h as i32 - 1) as usize;
-                if st.button[0] {
-                    for hit in hits.iter() {
-                        if in_hit(hit, mx, my) {
-                            if hit.kind == 9 {
-                                go_linux = true;
-                                continue;
-                            }
-                            if hit.kind == 6 {
-                                upload = true;
-                                continue;
-                            }
-                            if hit.kind == 7 {
-                                upload = false;
-                                continue;
-                            }
-                            if hit.kind == 8 {
-                                cfg.animation = 5;
-                                upload = false;
-                                saved = false;
-                                continue;
-                            }
-                            if hit.kind == 1 && hit.id == 5 && !has_clip {
-                                continue;
-                            }
-                            if apply_hit(&mut cfg, hit) {
-                                saved = save_cfg(&cfg);
-                            } else {
-                                saved = false;
-                            }
-                        }
-                    }
-                }
-            }
+        dirty = false;
         }
 
         let pressed = core::cell::RefCell::new(None);
@@ -727,6 +696,7 @@ fn main() -> Status {
             }
         });
         if let Some(k) = pressed.into_inner() {
+            dirty = true;
             match k {
                 Key::Special(ScanCode::LEFT) => {
                     cfg.animation = match cfg.animation {
@@ -784,12 +754,11 @@ fn main() -> Status {
         }
 
         t = t.wrapping_add(1);
-        boot::stall(16_000);
+        boot::stall(80_000);
         if go_linux {
             break;
         }
     }
-    drop(ptr);
     drop(gop);
     start_linux();
     loop {
