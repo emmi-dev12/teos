@@ -23,7 +23,7 @@ Linux: `./scripts/run-qemu.sh` then **Start** (or space). Click the boxes (or ty
 
 ## USB
 
-Read **DISCLAIMER.md** and **docs/t2-boot.md**. Scripts refuse `disk0`. USB kernel is **t2linux 6.18.54** (GPL, fetched at build). apple_set_os + iommu cmdline are baked in. We do not ship Apple Wi‑Fi firmware.
+Read **DISCLAIMER.md** and **docs/t2-boot.md**. Scripts refuse `disk0`. USB kernel is **t2linux 6.18.54** (GPL). Wi‑Fi: [docs/wifi.md](docs/wifi.md) (BCM4364 Kauai; firmware from the 15,1, not shipped).
 
 ## License
 

@@ -89,6 +89,20 @@ for d in /dev/vda1 /dev/vda /dev/sda1 /dev/sda /dev/sdb1 /dev/sdb; do
   fi
 done
 [ -n "$mounted" ] || log "no stick"
+$BB mkdir -p /lib/firmware/brcm
+for src in /stick/EFI/TEOS/brcm /stick/brcm; do
+  if [ -d "$src" ]; then
+    $BB cp "$src/"*.bin "$src/"*.txt "$src/"*.clm_blob /lib/firmware/brcm/ 2>/dev/null || true
+  fi
+done
+log "wifi fw $($BB ls /lib/firmware/brcm 2>/dev/null | $BB tr '\n' ' ')"
+ins "$MOD/net/rfkill/rfkill.ko"
+ins "$MOD/net/wireless/cfg80211.ko"
+ins "$MOD/drivers/mmc/core/mmc_core.ko"
+ins "$MOD/drivers/net/wireless/broadcom/brcm80211/brcmutil/brcmutil.ko"
+ins "$MOD/drivers/net/wireless/broadcom/brcm80211/brcmfmac/brcmfmac.ko"
+ins "$MOD/drivers/net/wireless/broadcom/brcm80211/brcmfmac/wcc/brcmfmac-wcc.ko"
+$BB mdev -s 2>/dev/null || true
 if [ -f /stick/APPS.IMG ]; then
   $BB mkdir -p /apps
   if $BB losetup /dev/loop0 /stick/APPS.IMG 2>/tmp/loop.err; then

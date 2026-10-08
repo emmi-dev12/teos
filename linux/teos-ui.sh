@@ -122,6 +122,8 @@ show_status() {
   say "  stick: $(grep -q ' /stick ' /proc/mounts && echo yes || echo no)"
   say "  apps disk: $(grep -q ' /apps ' /proc/mounts && echo yes || echo no)"
   say "  nano: $(command -v nano >/dev/null && echo yes || echo no)"
+  say "  wifi fw: $([ -f /lib/firmware/brcm/brcmfmac4364-pcie.bin ] && echo yes || echo no)"
+  say "  wlan: $(ls /sys/class/net 2>/dev/null | grep -v lo | tr '\n' ' ')"
   wait_key
 }
 

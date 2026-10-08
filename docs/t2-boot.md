@@ -41,7 +41,7 @@ Boot uses the official **t2linux** kernel `6.18.54-1-t2-bookworm` ([T2-Debian-an
 
 It includes t2bce (keyboard/trackpad over the T2 bridge), hid-apple, applesmc. QEMU has no T2 chip — those modules fail there and that is fine.
 
-Wi‑Fi still needs **your** Broadcom firmware in `third_party/brcm/` (we do not ship Apple blobs).
+Wi‑Fi: driver is on the stick. Firmware is not (Apple’s). **[docs/wifi.md](wifi.md)** — on the 2018 in macOS run `./scripts/copy-wifi-fw.sh`, then flash. Chip **BCM4364 / Kauai**.
 
 ## Boot
 

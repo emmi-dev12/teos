@@ -45,7 +45,12 @@ cp docs/t2-boot.md /Volumes/TEOS/T2.TXT 2>/dev/null || true
 cp docs/mate.md /Volumes/TEOS/MATE.TXT 2>/dev/null || true
 if [ -d third_party/brcm ]; then
   mkdir -p /Volumes/TEOS/EFI/TEOS/brcm
-  cp -f third_party/brcm/* /Volumes/TEOS/EFI/TEOS/brcm/ 2>/dev/null || true
+  for f in third_party/brcm/brcmfmac4364-pcie.bin \
+           third_party/brcm/brcmfmac4364-pcie.clm_blob \
+           "third_party/brcm/brcmfmac4364-pcie.Apple Inc.-MacBookPro15,1.txt"; do
+    [ -f "$f" ] && cp -f "$f" /Volumes/TEOS/EFI/TEOS/brcm/
+  done
 fi
+cp docs/wifi.md /Volumes/TEOS/WIFI.TXT 2>/dev/null || true
 diskutil eject "$DEV" || true
 echo "Stick ready. Hold Option on the T2 Mac, pick EFI Boot, then Start."
