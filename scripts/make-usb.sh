@@ -41,5 +41,11 @@ cp -R esp/EFI/TEOS/. /Volumes/TEOS/EFI/TEOS/
 cp -f esp/splash.cfg /Volumes/TEOS/splash.cfg 2>/dev/null || true
 cp -f esp/CLIP.VID /Volumes/TEOS/CLIP.VID 2>/dev/null || true
 cp DISCLAIMER.md /Volumes/TEOS/DISCLAIMER.md
+cp docs/t2-boot.md /Volumes/TEOS/T2.TXT 2>/dev/null || true
+cp docs/mate.md /Volumes/TEOS/MATE.TXT 2>/dev/null || true
+if [ -d third_party/brcm ]; then
+  mkdir -p /Volumes/TEOS/EFI/TEOS/brcm
+  cp -f third_party/brcm/* /Volumes/TEOS/EFI/TEOS/brcm/ 2>/dev/null || true
+fi
 diskutil eject "$DEV" || true
 echo "Stick ready. Hold Option on the T2 Mac, pick EFI Boot, then Start."

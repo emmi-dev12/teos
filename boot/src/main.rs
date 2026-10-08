@@ -32,8 +32,8 @@ struct Cfg {
 impl Default for Cfg {
     fn default() -> Self {
         Self {
-            animation: 2,
-            color: 0,
+            animation: 5,
+            color: 3,
             length: 0,
         }
     }
@@ -186,9 +186,44 @@ fn load_clip() -> Option<Clip> {
     Some(Clip { w, h, n, pix })
 }
 
+fn apple_set_os() {
+    // Public Mac EFI protocol (0xbb / t2linux hybrid-graphics). No T2 key dump.
+    #[repr(C)]
+    struct AppleSetOs {
+        version: u64,
+        set_os_version: Option<unsafe extern "efiapi" fn(*const u8) -> Status>,
+        set_os_vendor: Option<unsafe extern "efiapi" fn(*const u8) -> Status>,
+    }
+    let Some(st) = uefi::table::system_table_raw() else {
+        return;
+    };
+    let st = unsafe { st.as_ref() };
+    let Some(bs) = (unsafe { st.boot_services.as_ref() }) else {
+        return;
+    };
+    let guid = uefi::Guid::parse_or_panic("c5c5da95-7d5c-45e6-b2f1-3fd52bb10077");
+    let mut iface: *mut AppleSetOs = core::ptr::null_mut();
+    let stt = unsafe { (bs.locate_protocol)(&guid, core::ptr::null_mut(), core::ptr::addr_of_mut!(iface).cast()) };
+    if stt.is_error() || iface.is_null() {
+        return;
+    }
+    let set_os = unsafe { &*iface };
+    let ver = b"Mac OS X 10.9\0";
+    let vendor = b"Apple Inc.\0";
+    if set_os.version != 0 {
+        if let Some(f) = set_os.set_os_version {
+            unsafe { let _ = f(ver.as_ptr()); };
+        }
+    }
+    if let Some(f) = set_os.set_os_vendor {
+        unsafe { let _ = f(vendor.as_ptr()); };
+    }
+}
+
 fn start_linux() {
     use uefi::boot::{OpenProtocolAttributes, OpenProtocolParams};
     use uefi_raw::protocol::loaded_image::LoadedImageProtocol;
+    apple_set_os();
 
     let Ok(proto) = boot::get_image_file_system(boot::image_handle()) else {
         return;
@@ -221,7 +256,7 @@ fn start_linux() {
         .ok()
         .and_then(|li| li.device())
     };
-    let opts = CString16::try_from("console=ttyS0 console=tty0 rdinit=/init initrd=\\EFI\\TEOS\\initrd.gz")
+    let opts = CString16::try_from("console=ttyS0 console=tty0 intel_iommu=on iommu=pt pm_async=off rdinit=/init initrd=\\EFI\\TEOS\\initrd.gz")
         .ok();
     if let Some(opts) = opts {
         let leaked: &'static CString16 = alloc::boxed::Box::leak(alloc::boxed::Box::new(opts));
