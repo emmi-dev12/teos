@@ -26,6 +26,8 @@ TEOS_DISK=diskN ./scripts/make-usb.sh
 
 The script **exits if the id is disk0**.
 
+ISO (same files): `./scripts/make-iso.sh` → `build/teos.iso`. GitHub Actions uploads that artifact. USB write is still **not disk0**.
+
 ## What is already on the stick (offline)
 
 No extra download on the 15,1 for these:

@@ -19,7 +19,11 @@ Linux: `./scripts/run-qemu.sh` then **Start** (or space). Click the boxes (or ty
 ./scripts/build.sh
 ./scripts/run-qemu.sh          # splash, then Start
 ./scripts/run-linux.sh         # skip splash, home screen
+./scripts/make-iso.sh          # build/teos.iso
+./scripts/run-iso.sh           # QEMU from the ISO
 ```
+
+GitHub Actions builds `teos.iso` on every push to `main` (Actions → ISO → artifact **teos-iso**). Do not commit the ISO.
 
 ## USB
 
